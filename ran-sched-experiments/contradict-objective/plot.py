@@ -1,12 +1,13 @@
 #!/usr/bin/python3
 
+import argparse
 import os
 import re
 import threading
 import time
 import traceback
 from datetime import timedelta
-from itertools import cycle
+from itertools import cycle, product
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,6 +21,9 @@ TIMES, N_USERS, N_SLICES = 3, 50, 10
 BEGIN_TS, END_TS = 0, 10000
 
 VSPACE = 30  # Verbose space, at least 15
+
+AVAIL_FLOW_TYPES = ["vid", "if", "bf"]
+AVAIL_INTRA_ALGS = ["mt", "pf", "mlwdf"]
 
 LINE_STYLES = ["X--", "D--", "o--"]
 COLORS = ["brown", "dimgrey", "cornflowerblue"]
@@ -355,7 +359,7 @@ def plot_together(enterprise_alg, flow_type):
         ax[i].set_ylabel("Ratio", fontsize=BASE_FONTSIZE + 2)
         ax[i].tick_params(axis="both", labelsize=BASE_FONTSIZE)
         ax[i].grid(axis="both", alpha=0.2)
-        ax[i].legend(fontsize=BASE_FONTSIZE + 2)
+        ax[i].legend(fontsize=BASE_FONTSIZE + 2, frameon=False, loc="lower right")
 
     plt.tight_layout()
     location_fcthol = f"{OUTPUT_DIR}/{enterprise_alg}-{flow_type}-fcthol.{OUTPUT_TYPE}"
@@ -367,18 +371,52 @@ def plot_together(enterprise_alg, flow_type):
 if __name__ == "__main__":
     color_init(autoreset=True)
 
+    parser = argparse.ArgumentParser(description="Plotting")
+    parser.add_argument(
+        "--intra-alg",
+        choices=AVAIL_INTRA_ALGS + ["all"],
+        nargs="+",
+    )
+    parser.add_argument(
+        "--flow-type",
+        choices=AVAIL_FLOW_TYPES + ["all"],
+        nargs="+",
+    )
+    parser.add_argument(
+        "--test",
+        action="store_true",
+        help="run the test plot (ignores other arguments)",
+    )
+    args = parser.parse_args()
+
+    if args.test:
+        # The configuration for the testing is different
+        TIMES, N_USERS, N_SLICES = 3, 204, 20
+        suites = [("test", "test")]
+    else:
+        intra_algs, flow_types = args.intra_alg, args.flow_type
+        if intra_algs is None or flow_types is None:
+            raise ValueError(
+                "--intra-alg and --flow-type must be specified, unless using --test "
+                "to run the test suite"
+            )
+        intra_algs = AVAIL_INTRA_ALGS if "all" in intra_algs else set(intra_algs)
+        flow_types = AVAIL_FLOW_TYPES if "all" in flow_types else set(flow_types)
+        suites = list(product(intra_algs, flow_types))
+
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
 
-    enterprise_alg, flow_type = "mlwdf", "vid"
-    if enterprise_alg == "test" and flow_type == "test":
-        # The configuration for the testing is different
-        TIMES, N_USERS, N_SLICES = 3, 204, 20
-
-    print()
-    loc_tprbs, loc_fcthol = plot_together(enterprise_alg, flow_type)
-    print()
-    for location in [loc_tprbs, loc_fcthol]:
-        print(Fore.GREEN + Style.BRIGHT + "Plot available at:", end=" ")
-        print(location)
-    print()
+    n_suites = len(suites)
+    for i, (enterprise_alg, flow_type) in enumerate(suites):
+        print()
+        print(
+            Fore.BLUE
+            + Style.BRIGHT
+            + f"[{i + 1}/{n_suites}] Enterprise: {enterprise_alg}; Flow: {flow_type}"
+        )
+        loc_tprbs, loc_fcthol = plot_together(enterprise_alg, flow_type)
+        print()
+        for location in [loc_tprbs, loc_fcthol]:
+            print(Fore.GREEN + Style.BRIGHT + f"Plot available at: {location}")
+        print()
