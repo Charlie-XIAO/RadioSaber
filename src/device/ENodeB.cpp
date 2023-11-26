@@ -324,17 +324,23 @@ void ENodeB::SetDLScheduler(ENodeB::DLSchedulerType type, string config_fname) {
       break;
 
     case ENodeB::DLSScheduler_MAXCELL_FAIRNESS:
-      scheduler = new DownlinkTransportScheduler(config_fname, 0, 1);
+      scheduler = new DownlinkTransportScheduler(config_fname, 2, 1);
       scheduler->SetMacEntity(mac);
       mac->SetDownlinkPacketScheduler(scheduler);
       break;
 
     case ENodeB::DLSScheduler_MAXCELL_MLWDF:
-      scheduler = new DownlinkTransportScheduler(config_fname, 0, 2);
+      scheduler = new DownlinkTransportScheduler(config_fname, 2, 2);
       scheduler->SetMacEntity(mac);
       mac->SetDownlinkPacketScheduler(scheduler);
       break;
 
+    case ENodeB::DLSScheduler_RANDOM: // Peter: Baseline of throughput variance for PF
+      scheduler = new DownlinkTransportScheduler(config_fname, 5, 0);
+      scheduler->SetMacEntity(mac);
+      mac->SetDownlinkPacketScheduler(scheduler);
+      break;
+      
     default:
       throw std::runtime_error("Error: invalid scheduler type");
       break;
