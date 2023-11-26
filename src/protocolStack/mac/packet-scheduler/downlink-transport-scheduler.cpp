@@ -110,15 +110,18 @@ double mLWDFMetric(DownlinkTransportScheduler::UserToSchedule* user,
   // fprintf(stderr, "User %d ML Score: %.2f\n", user->GetUserID(),
   //         HoL * maxThroughputMetric(user, index) / averageRate * 1000);  // 4 for rbg_size
 
-  if (slice_id <= 4){
-    urgency = 1;
-  } else if (slice_id > 4 && slice_id <= 9){
-    urgency = 10;
-  } else if (slice_id > 9 && slice_id <= 14){
-    urgency = 100;
-  }
+  // if (slice_id <= 4){
+  //   urgency = 1;
+  // } else if (slice_id > 4 && slice_id <= 9){
+  //   urgency = 100;
+  // } else if (slice_id > 9 && slice_id <= 14){
+  //   urgency = 10000;
+  // }
   // return urgency * HoL * maxThroughputMetric(user, index, slice_id) / averageRate * 1000;
-  return urgency * maxThroughputMetric(user, index, slice_id) / averageRate * 1000;
+
+  return -HoL * maxThroughputMetric(user, index, slice_id) / averageRate * 1000;
+
+  // return urgency * maxThroughputMetric(user, index, slice_id);
 
   // return urgency * maxThroughputMetric(user, index, slice_id);
 }
@@ -885,7 +888,7 @@ double DownlinkTransportScheduler::ComputeSchedulingMetric(
       RadioBearer* bearer = user->m_bearers[slice_priority_[slice_id]];
       if (param.beta) {
         double HoL = bearer->GetHeadOfLinePacketDelay();
-        metric = HoL * pow(spectralEfficiency, param.epsilon) /
+        metric = -HoL * pow(spectralEfficiency, param.epsilon) /
                  pow(averageRate, param.psi);
       } else {
         metric = pow(spectralEfficiency, param.epsilon) /
